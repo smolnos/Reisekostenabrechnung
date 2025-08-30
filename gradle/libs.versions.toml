@@ -1,0 +1,59 @@
+[versions]
+accompanistFlowlayout = "0.36.0"
+accompanistFlowlayoutVersion = "0.31.3-alpha"
+agp = "8.11.1"
+datastorePreferences = "1.1.7"
+kotlin = "2.2.10"
+coreKtx = "1.17.0"
+junit = "4.13.2"
+junitVersion = "1.3.0"
+espressoCore = "3.7.0"
+kotlinxSerializationJson = "1.9.0"
+lifecycleRuntimeKtx = "2.9.2"
+activityCompose = "1.10.1"
+composeBom = "2025.08.00"
+foundationDesktop = "1.7.0"
+lifecycleViewmodelCompose = "2.6.2"
+material3 = "1.3.2"
+material3AdaptiveNavigationSuite = "1.5.0-alpha02"
+material3WindowSizeClass = "1.3.2"
+materialIconsExtended = "1.7.8"
+material3Lint = "1.5.0-alpha02"
+
+[libraries]
+accompanist-flowlayout = { module = "com.google.accompanist:accompanist-flowlayout", version.ref = "accompanistFlowlayout" }
+accompanist-flowlayout-v0313alpha = { module = "com.google.accompanist:accompanist-flowlayout", version.ref = "accompanistFlowlayoutVersion" }
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
+androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleRuntimeKtx" }
+androidx-lifecycle-viewmodel-compose-v262 = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelCompose" }
+androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended", version.ref = "materialIconsExtended" }
+androidx-material3-adaptive-navigation-suite = { module = "androidx.compose.material3:material3-adaptive-navigation-suite", version.ref = "material3AdaptiveNavigationSuite" }
+androidx-material3-window-size-class1 = { module = "androidx.compose.material3:material3-window-size-class", version.ref = "material3WindowSizeClass" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidx-ui = { group = "androidx.compose.ui", name = "ui" }
+androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
+androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-foundation-desktop = { group = "androidx.compose.foundation", name = "foundation-desktop", version.ref = "foundationDesktop" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
+material3 = { module = "androidx.compose.material3:material3", version.ref = "material3" }
+ui = { module = "androidx.compose.ui:ui" }
+ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+androidx-material3-lint = { group = "androidx.compose.material3", name = "material3-lint", version.ref = "material3Lint" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+
