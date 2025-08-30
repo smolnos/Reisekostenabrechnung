@@ -181,7 +181,6 @@ fun TravelExpenseApp(viewModel: TravelExpenseViewModel) {
             Spacer(Modifier.height(16.dp))
 
             // Neuer Eintrag
-            var expanded by remember { mutableStateOf(false) }
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
@@ -191,38 +190,48 @@ fun TravelExpenseApp(viewModel: TravelExpenseViewModel) {
                     Text("Neuer Eintrag:", style = MaterialTheme.typography.titleMedium)
 
                     // Autocomplete für Namen (stabil)
-                    Column {
+                    var expanded by remember { mutableStateOf(false) }
+
+                    ExposedDropdownMenuBox(
+                        expanded = expanded,
+                        onExpandedChange = { expanded = !expanded }
+                    ) {
                         OutlinedTextField(
                             value = name,
                             onValueChange = { input ->
                                 name = input
-                                expanded = input.isNotBlank() && participantsList.isNotEmpty()
+                                // Nur öffnen, wenn es Vorschläge gibt
+                                expanded = input.isNotBlank() && participantsList.any { it.contains(input, true) }
                             },
                             placeholder = { Text("Name") },
                             leadingIcon = { Text("👤") },
                             modifier = Modifier.fillMaxWidth()
                         )
 
-                        val suggestions = participantsList.filter {
-                            it.contains(name, ignoreCase = true) && name.isNotBlank()
+                        val filteredNames = remember(name, participantsList) {
+                            participantsList.filter {
+                                it.contains(name, ignoreCase = true)
+                            }
                         }
 
-                        DropdownMenu(
-                            expanded = expanded && suggestions.isNotEmpty(),
-                            onDismissRequest = { expanded = false },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            suggestions.forEach { suggestion ->
-                                DropdownMenuItem(
-                                    text = { Text(suggestion) },
-                                    onClick = {
-                                        name = suggestion
-                                        expanded = false
-                                    }
-                                )
+                        if (filteredNames.isNotEmpty()) {
+                            ExposedDropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false }
+                            ) {
+                                filteredNames.forEach { suggestion ->
+                                    DropdownMenuItem(
+                                        text = { Text(suggestion) },
+                                        onClick = {
+                                            name = suggestion
+                                            expanded = false
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
+
 
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
