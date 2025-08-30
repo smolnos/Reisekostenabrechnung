@@ -6,16 +6,18 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,9 +30,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.*
-import kotlin.math.abs
 import kotlin.math.min
+import kotlin.math.abs
 
 @OptIn(ExperimentalMaterial3Api::class)
 class MainActivity : ComponentActivity() {
@@ -65,8 +69,10 @@ fun TravelExpenseApp(viewModel: TravelExpenseViewModel) {
     val datePickerDialog = remember {
         DatePickerDialog(
             context,
-            { _, y, m, d -> date = "${d.toString().padStart(2,'0')}." +
-                    "${(m+1).toString().padStart(2,'0')}.$y" },
+            { _, y, m, d ->
+                date = "${d.toString().padStart(2,'0')}." +
+                        "${(m+1).toString().padStart(2,'0')}.$y"
+            },
             calendar.get(Calendar.YEAR),
             calendar.get(Calendar.MONTH),
             calendar.get(Calendar.DAY_OF_MONTH)
@@ -87,14 +93,16 @@ fun TravelExpenseApp(viewModel: TravelExpenseViewModel) {
                 fontFamily = FontFamily.Cursive,
                 fontSize = 36.sp,
                 modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                color = Color(0xFF333333)
             )
             Spacer(Modifier.height(22.dp))
 
             // Teilnehmerverwaltung
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFEFEFEF))
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFECEFF1)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     Text("Teilnehmer verwalten:", style = MaterialTheme.typography.titleMedium)
@@ -127,25 +135,45 @@ fun TravelExpenseApp(viewModel: TravelExpenseViewModel) {
                         ) {
                             participantsList.forEach { person ->
                                 val isSelected = person in selectedParticipants
-                                Box(
+                                val chipColor = if (isSelected) Color(0xFF7E57C2) else Color(0xFFD1C4E9)
+                                val textColor = if (isSelected) Color.White else Color.Black
+
+                                Surface(
+                                    shape = MaterialTheme.shapes.medium,
+                                    shadowElevation = 4.dp,
+                                    color = chipColor,
                                     modifier = Modifier
-                                        .background(
-                                            color = if (isSelected) Color(0xFFBB86FC) else Color(0xFFD0D0D0),
-                                            shape = MaterialTheme.shapes.small
-                                        )
                                         .combinedClickable(
                                             onClick = {
-                                                selectedParticipants = if (isSelected) selectedParticipants - person
-                                                else selectedParticipants + person
+                                                selectedParticipants = if (isSelected)
+                                                    selectedParticipants - person
+                                                else
+                                                    selectedParticipants + person
                                             },
                                             onLongClick = {
                                                 viewModel.removeParticipant(person)
                                                 selectedParticipants = selectedParticipants - person
                                             }
                                         )
-                                        .padding(horizontal = 12.dp, vertical = 6.dp)
                                 ) {
-                                    Text(text = person, color = if (isSelected) Color.White else Color.Black)
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                    ) {
+                                        Text(person, color = textColor)
+                                        Spacer(Modifier.width(6.dp))
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = "Teilnehmer löschen",
+                                            modifier = Modifier
+                                                .size(16.dp)
+                                                .clickable {
+                                                    viewModel.removeParticipant(person)
+                                                    selectedParticipants = selectedParticipants - person
+                                                },
+                                            tint = if (isSelected) Color.White else Color.Black
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -155,21 +183,50 @@ fun TravelExpenseApp(viewModel: TravelExpenseViewModel) {
 
             Spacer(Modifier.height(16.dp))
 
-            // Formular für Einträge
+            // Neuer Eintrag
+            var expanded by remember { mutableStateOf(false) }
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     Text("Neuer Eintrag:", style = MaterialTheme.typography.titleMedium)
-                    // Name als simples Textfeld
-                    OutlinedTextField(
-                        value = name,
-                        onValueChange = { name = it },
-                        placeholder = { Text("Name") },
-                        leadingIcon = { Text("👤") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
+
+                    // Autocomplete für Namen (stabil)
+                    Column {
+                        OutlinedTextField(
+                            value = name,
+                            onValueChange = { input ->
+                                name = input
+                                expanded = input.isNotBlank() && participantsList.isNotEmpty()
+                            },
+                            placeholder = { Text("Name") },
+                            leadingIcon = { Text("👤") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        val suggestions = participantsList.filter {
+                            it.contains(name, ignoreCase = true) && name.isNotBlank()
+                        }
+
+                        DropdownMenu(
+                            expanded = expanded && suggestions.isNotEmpty(),
+                            onDismissRequest = { expanded = false },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            suggestions.forEach { suggestion ->
+                                DropdownMenuItem(
+                                    text = { Text(suggestion) },
+                                    onClick = {
+                                        name = suggestion
+                                        expanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value = amount,
@@ -239,21 +296,23 @@ fun TravelExpenseApp(viewModel: TravelExpenseViewModel) {
                         colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F0F0))
                     ) {
                         Row(
-                            verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(8.dp)
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text("${e.date} — ${e.name}: €${"%.2f".format(e.amount)} — ${e.description}")
                                 Text("Teilnehmer: ${e.participants.joinToString(", ")}",
                                     style = MaterialTheme.typography.bodySmall)
                             }
-                            Text(
-                                "❌",
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Eintrag löschen",
                                 modifier = Modifier
-                                    .padding(8.dp)
-                                    .clickable { viewModel.removeEntry(idx) }
+                                    .size(24.dp)
+                                    .clickable { viewModel.removeEntry(idx) },
+                                tint = Color.Black
                             )
                         }
                     }
@@ -270,28 +329,55 @@ fun TravelExpenseApp(viewModel: TravelExpenseViewModel) {
             if (showSettlement) {
                 val settlements = computeSettlements(entries, participantsList)
                 Spacer(Modifier.height(16.dp))
-                Text("Ausgleichsvorschläge:", style = MaterialTheme.typography.titleMedium)
-                settlements.forEach { s ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF0EAD6))
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(s, style = MaterialTheme.typography.bodyMedium)
+
+                // Card für Ausgleichsvorschläge
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFECEFF1)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            "Ausgleichsvorschläge",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Spacer(Modifier.height(8.dp))
+
+                        if (settlements.isEmpty()) {
+                            Text("Alles ausgeglichen!", style = MaterialTheme.typography.bodyMedium)
+                        } else {
+                            settlements.forEach { s ->
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(s, style = MaterialTheme.typography.bodyMedium)
+                                    }
+                                }
+                            }
                         }
                     }
+                }
+
+                // Scroll ans Ende
+                LaunchedEffect(settlements.size) {
+                    delay(50)
+                    scrollState.animateScrollTo(scrollState.maxValue)
                 }
             }
         }
     }
 }
+
 
 // computeSettlements wie vorher
 fun computeSettlements(entries: List<Entry>, allNames: List<String>): List<String> {

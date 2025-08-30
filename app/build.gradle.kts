@@ -45,6 +45,7 @@ dependencies {
     implementation(libs.ui)
     implementation(libs.ui.tooling.preview)
     implementation(libs.androidx.material3.lint)
+    implementation(libs.androidx.room.common.jvm)
     debugImplementation(libs.ui.tooling)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.material.icons.extended)
