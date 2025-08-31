@@ -1,18 +1,26 @@
 package com.example.reisekostenabrechnung
 
 import android.app.Application
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 // DataStore Extension
 val Application.dataStore by androidx.datastore.preferences.preferencesDataStore("travel_expenses")
+
+// 👉 Datenklasse für Export/Import
+@Serializable
+data class ExportData(
+    val entries: List<Entry>,
+    val participants: List<String>
+)
 
 class TravelExpenseViewModel(application: Application) : AndroidViewModel(application) {
     private val dataStore = application.dataStore
@@ -84,6 +92,41 @@ class TravelExpenseViewModel(application: Application) : AndroidViewModel(applic
         viewModelScope.launch {
             dataStore.edit { prefs ->
                 prefs[KEY_PARTICIPANTS] = Json.encodeToString(list)
+            }
+        }
+    }
+
+    // 👉 Export als JSON-Datei
+    fun exportData(context: Context, uri: Uri) {
+        viewModelScope.launch {
+            val exportObject = ExportData(
+                entries = _entries.value,
+                participants = _participants.value
+            )
+            val json = Json.encodeToString(exportObject)
+
+            context.contentResolver.openOutputStream(uri)?.use { stream ->
+                stream.bufferedWriter().use { writer ->
+                    writer.write(json)
+                    writer.flush() // 👉 wichtig!
+                }
+            }
+        }
+    }
+
+
+    // 👉 Import aus JSON-Datei
+    fun importData(context: Context, uri: Uri) {
+        viewModelScope.launch {
+            context.contentResolver.openInputStream(uri)?.use { stream ->
+                val json = stream.bufferedReader().readText()
+                val importObject = Json.decodeFromString<ExportData>(json)
+
+                _entries.value = importObject.entries
+                _participants.value = importObject.participants
+
+                saveEntries(importObject.entries)
+                saveParticipants(importObject.participants)
             }
         }
     }

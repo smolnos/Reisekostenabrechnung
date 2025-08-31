@@ -3,7 +3,9 @@ package com.example.reisekostenabrechnung
 import android.app.DatePickerDialog
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.combinedClickable
@@ -76,6 +78,20 @@ fun TravelExpenseApp(viewModel: TravelExpenseViewModel) {
         )
     }
 
+    // 👉 Launcher für Export/Import
+    val launcherExport = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json"),
+        onResult = { uri ->
+            uri?.let { viewModel.exportData(context, it) }
+        }
+    )
+    val launcherImport = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = { uri ->
+            uri?.let { viewModel.importData(context, it) }
+        }
+    )
+
     Scaffold { paddingValues ->
         Column(
             modifier = Modifier
@@ -84,7 +100,7 @@ fun TravelExpenseApp(viewModel: TravelExpenseViewModel) {
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            // Titel
+            // 🧳 Titel
             Text(
                 text = "🧳 Reiseabrechnung 🧳",
                 fontFamily = FontFamily.Cursive,
@@ -378,6 +394,21 @@ fun TravelExpenseApp(viewModel: TravelExpenseViewModel) {
                 LaunchedEffect(settlements.size) {
                     delay(50)
                     scrollState.animateScrollTo(scrollState.maxValue)
+                }
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            // 👉 Export/Import-Buttons hier einfügen
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                Button(onClick = { launcherExport.launch("reiseabrechnung.json") }) {
+                    Text("Exportieren")
+                }
+                Button(onClick = { launcherImport.launch("application/json") }) {
+                    Text("Importieren")
                 }
             }
         }
